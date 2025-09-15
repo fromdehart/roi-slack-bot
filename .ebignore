@@ -1,0 +1,18 @@
+# Files to ignore when deploying to AWS Elastic Beanstalk
+.env
+.env.example
+*.pyc
+__pycache__/
+*.log
+.git/
+.gitignore
+README.md
+*.md
+test_*.py
+sample_*.png
+cost_*.png
+productivity_*.png
+Dockerfile
+safe_executor.py
+graph_generator_safe.py
+setup_safe_testing.py
