@@ -14,10 +14,22 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Check for required environment variables
+slack_bot_token = os.environ.get("SLACK_BOT_TOKEN")
+slack_signing_secret = os.environ.get("SLACK_SIGNING_SECRET")
+
+if not slack_bot_token:
+    logger.error("SLACK_BOT_TOKEN environment variable is not set")
+    raise ValueError("SLACK_BOT_TOKEN environment variable is required")
+
+if not slack_signing_secret:
+    logger.error("SLACK_SIGNING_SECRET environment variable is not set")
+    raise ValueError("SLACK_SIGNING_SECRET environment variable is required")
+
 # Initialize Slack app
 app = App(
-    token=os.environ.get("SLACK_BOT_TOKEN"),
-    signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
+    token=slack_bot_token,
+    signing_secret=slack_signing_secret
 )
 
 # Initialize Flask for Heroku
@@ -118,8 +130,13 @@ def slack_events():
             return challenge, 200
         return "OK", 200
     else:
-        # Handle POST requests (slash commands, events)
-        return handler.handle(request)
+        try:
+            # Handle POST requests (slash commands, events)
+            return handler.handle(request)
+        except Exception as e:
+            logger.error(f"Error handling Slack request: {str(e)}")
+            # Return a proper response to avoid JSON parsing errors
+            return {"error": str(e)}, 400
 
 # Default route
 @flask_app.route("/", methods=["GET"])
