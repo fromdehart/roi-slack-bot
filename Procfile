@@ -1,1 +1,1 @@
-web: gunicorn roi-slackbot:flask_app
+web: python test_minimal.py

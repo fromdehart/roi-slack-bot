@@ -1,9 +1,11 @@
 # 🚀 Heroku Deployment Guide for ROI Slack Bot
 
-## ✅ Files Created for Deployment:
+## ✅ Files Ready for Deployment:
 - ✅ `Procfile` - Tells Heroku how to run your app
 - ✅ `runtime.txt` - Specifies Python version
 - ✅ `requirements.txt` - Python dependencies
+- ✅ `.gitignore` - Prevents committing sensitive files
+- ✅ Clean git repository (no API keys in history)
 
 ## 🌐 Deploy via Heroku Web Interface:
 
@@ -21,8 +23,9 @@
 1. In your Heroku app dashboard, go to "Deploy" tab
 2. Click "Connect to GitHub"
 3. Authorize Heroku to access your GitHub
-4. Find your repository: `roi-slack-bot`
-5. Click "Connect"
+4. **Create a new repository** on GitHub (since we cleaned the old one)
+5. Push this code to your new GitHub repository
+6. Connect that repository to Heroku
 
 ### Step 4: Set Environment Variables
 1. Go to "Settings" tab in your Heroku app
@@ -49,10 +52,15 @@
 ## 📝 Next Steps:
 1. Create Heroku account
 2. Create new app
-3. Connect GitHub repository
-4. Set environment variables
-5. Deploy!
-6. Update Slack URLs
-7. Test your live bot!
+3. Create new GitHub repository and push this code
+4. Connect GitHub repository to Heroku
+5. Set environment variables
+6. Deploy!
+7. Update Slack URLs
+8. Test your live bot!
+
+## 🔐 Security Note:
+The `.env` file with your API keys is NOT included in the repository.
+You'll need to add your API keys as environment variables in Heroku.
 
 Ready to deploy? 🚀
