@@ -14,29 +14,42 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Initialize Flask first
+flask_app = Flask(__name__)
+
 # Check for required environment variables
 slack_bot_token = os.environ.get("SLACK_BOT_TOKEN")
 slack_signing_secret = os.environ.get("SLACK_SIGNING_SECRET")
 
+logger.info("Environment variables check:")
+logger.info(f"SLACK_BOT_TOKEN present: {bool(slack_bot_token)}")
+logger.info(f"SLACK_SIGNING_SECRET present: {bool(slack_signing_secret)}")
+
 if not slack_bot_token:
     logger.error("SLACK_BOT_TOKEN environment variable is not set")
-    raise ValueError("SLACK_BOT_TOKEN environment variable is required")
+    slack_app = None
+    handler = None
+else:
+    if not slack_signing_secret:
+        logger.error("SLACK_SIGNING_SECRET environment variable is not set")
+        slack_app = None
+        handler = None
+    else:
+        try:
+            # Initialize Slack app
+            slack_app = App(
+                token=slack_bot_token,
+                signing_secret=slack_signing_secret
+            )
+            handler = SlackRequestHandler(slack_app)
+            logger.info("Slack app initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Slack app: {str(e)}")
+            slack_app = None
+            handler = None
 
-if not slack_signing_secret:
-    logger.error("SLACK_SIGNING_SECRET environment variable is not set")
-    raise ValueError("SLACK_SIGNING_SECRET environment variable is required")
-
-# Initialize Slack app
-app = App(
-    token=slack_bot_token,
-    signing_secret=slack_signing_secret
-)
-
-# Initialize Flask for Heroku
-flask_app = Flask(__name__)
-handler = SlackRequestHandler(app)
-
-@app.command("/roi")
+if slack_app is not None:
+    @slack_app.command("/roi")
 def handle_roi_command(ack, respond, command):
     """Handle /roi slash command"""
     ack()
@@ -64,7 +77,8 @@ def handle_roi_command(ack, respond, command):
         image_path = generate_roi_graph(user_text)
         
         # Upload image to Slack using the modern method
-        result = app.client.files_upload_v2(
+        if slack_app is not None:
+            result = slack_app.client.files_upload_v2(
             channel=channel_id,
             file=image_path,
             title=f"ROI Analysis: {user_text[:50]}{'...' if len(user_text) > 50 else ''}",
@@ -81,12 +95,13 @@ def handle_roi_command(ack, respond, command):
         logger.error(f"Error generating graph: {str(e)}")
         
         # Send error message
-        app.client.chat_postMessage(
+        if slack_app is not None:
+            slack_app.client.chat_postMessage(
             channel=channel_id,
             text=f"❌ Sorry, I couldn't generate that graph. Error: {str(e)[:200]}...\n\nTry rephrasing your request or contact support."
         )
 
-@app.command("/roi-help")
+    @slack_app.command("/roi-help")
 def handle_help_command(ack, respond):
     """Provide help for the ROI bot"""
     ack()
@@ -136,6 +151,11 @@ def slack_events():
             logger.info(f"Request headers: {dict(request.headers)}")
             request_data = request.get_data()
             logger.info(f"Request data length: {len(request_data)}")
+            
+            # Check if handler is available
+            if handler is None:
+                logger.error("Slack handler not initialized - check environment variables")
+                return {"error": "Slack handler not initialized"}, 500
             
             # Check if request has data
             if not request_data:
