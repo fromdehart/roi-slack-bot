@@ -162,18 +162,22 @@ def slack_events():
                 logger.warning("Empty request body received")
                 return {"error": "Empty request body"}, 400
             
-            # Handle POST requests (slash commands, events)
-            response = handler.handle(request)
-            logger.info(f"Handler response: {response}")
-            return response
+        # Handle POST requests (slash commands, events)
+        if handler is None:
+            logger.error("Slack handler not initialized - check environment variables")
+            return {"error": "Slack handler not initialized - check environment variables"}, 500
             
-        except Exception as e:
-            logger.error(f"Error handling Slack request: {str(e)}")
-            logger.error(f"Request data: {request.get_data()}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            # Return a proper response to avoid JSON parsing errors
-            return {"error": str(e)}, 400
+        response = handler.handle(request)
+        logger.info(f"Handler response: {response}")
+        return response
+
+    except Exception as e:
+        logger.error(f"Error handling Slack request: {str(e)}")
+        logger.error(f"Request data: {request.get_data()}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Return a proper response to avoid JSON parsing errors
+        return {"error": str(e)}, 400
 
 # Default route
 @flask_app.route("/", methods=["GET"])
