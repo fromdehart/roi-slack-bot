@@ -131,10 +131,27 @@ def slack_events():
         return "OK", 200
     else:
         try:
+            # Log request details for debugging
+            logger.info(f"Received POST request with content-type: {request.content_type}")
+            logger.info(f"Request headers: {dict(request.headers)}")
+            request_data = request.get_data()
+            logger.info(f"Request data length: {len(request_data)}")
+            
+            # Check if request has data
+            if not request_data:
+                logger.warning("Empty request body received")
+                return {"error": "Empty request body"}, 400
+            
             # Handle POST requests (slash commands, events)
-            return handler.handle(request)
+            response = handler.handle(request)
+            logger.info(f"Handler response: {response}")
+            return response
+            
         except Exception as e:
             logger.error(f"Error handling Slack request: {str(e)}")
+            logger.error(f"Request data: {request.get_data()}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             # Return a proper response to avoid JSON parsing errors
             return {"error": str(e)}, 400
 
