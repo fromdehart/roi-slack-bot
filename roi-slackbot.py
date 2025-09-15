@@ -67,67 +67,67 @@ else:
 
 if slack_app is not None:
     @slack_app.command("/roi")
-def handle_roi_command(ack, respond, command):
-    """Handle /roi slash command"""
-    ack()
-    
-    user_text = command['text']
-    channel_id = command['channel_id']
-    user_id = command['user_id']
-    
-    if not user_text.strip():
+    def handle_roi_command(ack, respond, command):
+        """Handle /roi slash command"""
+        ack()
+        
+        user_text = command['text']
+        channel_id = command['channel_id']
+        user_id = command['user_id']
+        
+        if not user_text.strip():
+            respond({
+                "text": "Please provide a description for your ROI graph!\nExample: `/roi VR training vs traditional training over 3 years`",
+                "response_type": "ephemeral"
+            })
+            return
+        
+        # Send immediate response
         respond({
-            "text": "Please provide a description for your ROI graph!\nExample: `/roi VR training vs traditional training over 3 years`",
+            "text": f"🎯 Generating ROI graph for: *{user_text}*\nThis may take 15-30 seconds...",
             "response_type": "ephemeral"
         })
-        return
-    
-    # Send immediate response
-    respond({
-        "text": f"🎯 Generating ROI graph for: *{user_text}*\nThis may take 15-30 seconds...",
-        "response_type": "ephemeral"
-    })
-    
-    try:
-        # Check if graph generator is available
-        if not GRAPH_GENERATOR_AVAILABLE:
-            raise Exception("Graph generator is not available - check logs for import errors")
         
-        # Generate the graph
-        logger.info(f"Generating graph for user {user_id}: {user_text}")
-        image_path = generate_roi_graph(user_text)
-        
-        # Upload image to Slack using the modern method
-        if slack_app is not None:
-            result = slack_app.client.files_upload_v2(
-                channel=channel_id,
-                file=image_path,
-                title=f"ROI Analysis: {user_text[:50]}{'...' if len(user_text) > 50 else ''}",
-                initial_comment=f"📊 Here's your ROI analysis for: *{user_text}*"
-            )
-        
-        # Clean up temp file
-        if os.path.exists(image_path):
-            os.remove(image_path)
+        try:
+            # Check if graph generator is available
+            if not GRAPH_GENERATOR_AVAILABLE:
+                raise Exception("Graph generator is not available - check logs for import errors")
             
-        logger.info(f"Successfully uploaded graph for user {user_id}")
-        
-    except Exception as e:
-        logger.error(f"Error generating graph: {str(e)}")
-        
-        # Send error message
-        if slack_app is not None:
-            slack_app.client.chat_postMessage(
-            channel=channel_id,
-            text=f"❌ Sorry, I couldn't generate that graph. Error: {str(e)[:200]}...\n\nTry rephrasing your request or contact support."
-        )
+            # Generate the graph
+            logger.info(f"Generating graph for user {user_id}: {user_text}")
+            image_path = generate_roi_graph(user_text)
+            
+            # Upload image to Slack using the modern method
+            if slack_app is not None:
+                result = slack_app.client.files_upload_v2(
+                    channel=channel_id,
+                    file=image_path,
+                    title=f"ROI Analysis: {user_text[:50]}{'...' if len(user_text) > 50 else ''}",
+                    initial_comment=f"📊 Here's your ROI analysis for: *{user_text}*"
+                )
+            
+            # Clean up temp file
+            if os.path.exists(image_path):
+                os.remove(image_path)
+            
+            logger.info(f"Successfully uploaded graph for user {user_id}")
+            
+        except Exception as e:
+            logger.error(f"Error generating graph: {str(e)}")
+            
+            # Send error message
+            if slack_app is not None:
+                slack_app.client.chat_postMessage(
+                    channel=channel_id,
+                    text=f"❌ Sorry, I couldn't generate that graph. Error: {str(e)[:200]}...\n\nTry rephrasing your request or contact support."
+                )
 
     @slack_app.command("/roi-help")
-def handle_help_command(ack, respond):
-    """Provide help for the ROI bot"""
-    ack()
-    
-    help_text = """
+    def handle_help_command(ack, respond):
+        """Provide help for the ROI bot"""
+        ack()
+        
+        help_text = """
 📊 *ROI Graph Generator Help*
 
 *Usage:* `/roi [your request]`
@@ -144,12 +144,12 @@ def handle_help_command(ack, respond):
 • Include context about your industry if relevant
 
 *Need help?* Contact your admin or try simpler requests first.
-    """
-    
-    respond({
-        "text": help_text,
-        "response_type": "ephemeral"
-    })
+        """
+        
+        respond({
+            "text": help_text,
+            "response_type": "ephemeral"
+        })
 
 # Health check endpoint for Heroku
 @flask_app.route("/health", methods=["GET"])
@@ -183,22 +183,18 @@ def slack_events():
                 logger.warning("Empty request body received")
                 return {"error": "Empty request body"}, 400
             
-        # Handle POST requests (slash commands, events)
-        if handler is None:
-            logger.error("Slack handler not initialized - check environment variables")
-            return {"error": "Slack handler not initialized - check environment variables"}, 500
-            
-        response = handler.handle(request)
-        logger.info(f"Handler response: {response}")
-        return response
+            # Handle POST requests (slash commands, events)
+            response = handler.handle(request)
+            logger.info(f"Handler response: {response}")
+            return response
 
-    except Exception as e:
-        logger.error(f"Error handling Slack request: {str(e)}")
-        logger.error(f"Request data: {request.get_data()}")
-        import traceback
-        logger.error(f"Traceback: {traceback.format_exc()}")
-        # Return a proper response to avoid JSON parsing errors
-        return {"error": str(e)}, 400
+        except Exception as e:
+            logger.error(f"Error handling Slack request: {str(e)}")
+            logger.error(f"Request data: {request.get_data()}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            # Return a proper response to avoid JSON parsing errors
+            return {"error": str(e)}, 400
 
 # Default route
 @flask_app.route("/", methods=["GET"])
