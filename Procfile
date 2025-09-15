@@ -1,1 +1,1 @@
-web: gunicorn roi-slackbot:flask_app --bind 0.0.0.0:$PORT
+web: gunicorn application:application --bind 0.0.0.0:8000
