@@ -1,0 +1,44 @@
+display_information:
+  name: ROI Graph Generator Bot
+  description: Generate professional ROI graphs from natural language using AI
+  background_color: "#2E86AB"
+  long_description: "A powerful Slack bot that generates professional ROI analysis graphs from natural language descriptions. Simply type a request like 'VR training vs traditional training over 3 years' and get a beautiful, business-ready graph instantly. Perfect for sales teams, consultants, and anyone who needs to quickly create ROI visualizations for presentations and proposals."
+
+features:
+  bot_user:
+    display_name: ROI Graph Generator
+    always_online: true
+  slash_commands:
+    - command: /roi
+      url: https://your-ngrok-url.ngrok.io/slack/events
+      description: Generate ROI graphs from natural language
+      usage_hint: VR training vs traditional training over 3 years
+      should_escape: false
+    - command: /roi-help
+      url: https://your-ngrok-url.ngrok.io/slack/events
+      description: Get help with ROI graph generation
+      usage_hint: Get help with ROI graph generation commands
+      should_escape: false
+
+oauth_config:
+  scopes:
+    bot:
+      - channels:read
+      - chat:write
+      - files:write
+      - commands
+      - app_mentions:read
+      - channels:history
+
+settings:
+  event_subscriptions:
+    request_url: https://your-ngrok-url.ngrok.io/slack/events
+    bot_events:
+      - app_mention
+      - message.channels
+  interactivity:
+    is_enabled: true
+    request_url: https://your-ngrok-url.ngrok.io/slack/events
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
