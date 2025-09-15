@@ -4,8 +4,22 @@ from dotenv import load_dotenv
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 from flask import Flask, request
-from graph_generator import generate_roi_graph
 import tempfile
+
+# Try to import graph_generator, but handle failures gracefully
+try:
+    from graph_generator import generate_roi_graph
+    GRAPH_GENERATOR_AVAILABLE = True
+    logger_import = logging.getLogger(__name__)
+    logger_import.info("Graph generator imported successfully")
+except Exception as e:
+    GRAPH_GENERATOR_AVAILABLE = False
+    logger_import = logging.getLogger(__name__)
+    logger_import.error(f"Failed to import graph_generator: {str(e)}")
+    
+    # Create a dummy function to prevent errors
+    def generate_roi_graph(user_request):
+        raise Exception(f"Graph generator not available: {str(e)}")
 
 # Load environment variables
 load_dotenv()
@@ -13,6 +27,9 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Log startup
+logger.info("🚀 ROI Slack Bot starting up...")
 
 # Initialize Flask first
 flask_app = Flask(__name__)
@@ -72,6 +89,10 @@ def handle_roi_command(ack, respond, command):
     })
     
     try:
+        # Check if graph generator is available
+        if not GRAPH_GENERATOR_AVAILABLE:
+            raise Exception("Graph generator is not available - check logs for import errors")
+        
         # Generate the graph
         logger.info(f"Generating graph for user {user_id}: {user_text}")
         image_path = generate_roi_graph(user_text)
@@ -79,11 +100,11 @@ def handle_roi_command(ack, respond, command):
         # Upload image to Slack using the modern method
         if slack_app is not None:
             result = slack_app.client.files_upload_v2(
-            channel=channel_id,
-            file=image_path,
-            title=f"ROI Analysis: {user_text[:50]}{'...' if len(user_text) > 50 else ''}",
-            initial_comment=f"📊 Here's your ROI analysis for: *{user_text}*"
-        )
+                channel=channel_id,
+                file=image_path,
+                title=f"ROI Analysis: {user_text[:50]}{'...' if len(user_text) > 50 else ''}",
+                initial_comment=f"📊 Here's your ROI analysis for: *{user_text}*"
+            )
         
         # Clean up temp file
         if os.path.exists(image_path):
@@ -191,5 +212,8 @@ def home():
 
 if __name__ == "__main__":
     # For local development
+    logger.info("🚀 Starting ROI Slack Bot...")
+    logger.info(f"Graph generator available: {GRAPH_GENERATOR_AVAILABLE}")
     port = int(os.environ.get("PORT", 3000))
+    logger.info(f"Starting Flask app on port {port}")
     flask_app.run(debug=True, host="0.0.0.0", port=port)
